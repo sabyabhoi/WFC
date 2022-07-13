@@ -3,7 +3,9 @@ const ArrayList = std.ArrayList;
 const MultiArrayList = std.MultiArrayList;
 const c = @import("./c.zig");
 const globals = @import("./globals.zig");
-const Grid = @import("./grid.zig").Grid;
+const gridObj = @import("./grid.zig");
+const Grid = gridObj.Grid;
+const Cell = gridObj.Cell;
 
 pub fn getTiles(renderer: *c.SDL_Renderer, allocator: *const std.mem.Allocator) !ArrayList(*c.SDL_Texture) {
     var tiles = ArrayList(*c.SDL_Texture).init(allocator.*);
@@ -40,6 +42,9 @@ pub fn main() !void {
     const tiles = try getTiles(renderer, &allocator);
     defer tiles.deinit();
 
+    var grid = try Grid.create(&allocator);
+    defer grid.cells.deinit(allocator);
+
     var frame: usize = 0;
     mainloop: while (true) {
         var sdl_event: c.SDL_Event = undefined;
@@ -52,12 +57,12 @@ pub fn main() !void {
         _ = c.SDL_SetRenderDrawColor(renderer, 0x2a, 0xca, 0xea, 0xff);
         _ = c.SDL_RenderClear(renderer);
 
-        var grid = try Grid.initialize(&allocator);
-        defer grid.cells.deinit(allocator);
 
+        try grid.collapse();
         try grid.draw(renderer, &tiles);
 
         c.SDL_RenderPresent(renderer);
         frame += 1;
+        c.SDL_Delay(1000);
     }
 }
