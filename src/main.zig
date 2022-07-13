@@ -1,71 +1,9 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
 const MultiArrayList = std.MultiArrayList;
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_image.h");
-    @cInclude("SDL2/SDL_surface.h");
-});
-
-const WIDTH: u16 = 512;
-const HEIGHT: u16 = 512;
-const DIM: u16 = 2;
-
-const DIR = enum { BLANK, UP, DOWN, LEFT, RIGHT };
-
-const Cell = struct {
-    collapsed: bool,
-    options: [5]bool,
-    width: i32,
-    height: i32,
-
-    pub fn default() Cell {
-        return Cell{ .collapsed = false, .width = HEIGHT / DIM, .height = WIDTH / DIM, .options = [5]bool{ true, true, true, true, true } };
-    }
-
-    pub fn getFirstIndex(self: Cell) usize {
-        var i: u16 = 0;
-        while (i < 5) : (i += 1) {
-            if (self.options[i]) {
-                break;
-            }
-        }
-        return i;
-    }
-};
-
-pub fn initializeGrid(allocator: *const std.mem.Allocator) !MultiArrayList(Cell) {
-    var grid = MultiArrayList(Cell){};
-
-    var i: u16 = 0;
-    while (i < DIM * DIM) : (i += 1) {
-        try grid.append(allocator.*, Cell{ .collapsed = true, .width = HEIGHT / DIM, .height = WIDTH / DIM, .options = [5]bool{ false, true, false, false, false } });
-    }
-
-    return grid;
-}
-
-pub fn drawTiles(renderer: *c.SDL_Renderer, tiles: *const ArrayList(*c.SDL_Texture), allocator: *const std.mem.Allocator) !void {
-    var grid = try initializeGrid(allocator);
-    defer grid.deinit(allocator.*);
-
-    var i: u16 = 0;
-    while (i < DIM) : (i += 1) {
-        var j: u16 = 0;
-        while (j < DIM) : (j += 1) {
-            var cell = grid.get(i + j * DIM);
-            var box = c.SDL_Rect{ .x = j * cell.width, .y = i * cell.width, .w = cell.height, .h = cell.height };
-            if (cell.collapsed) {
-                const index = cell.getFirstIndex();
-                if (index >= 5) {
-                    c.SDL_Log("No options available");
-                    return error.SDLInitializationError;
-                }
-                _ = c.SDL_RenderCopy(renderer, tiles.items[index], null, &box);
-            }
-        }
-    }
-}
+const c = @import("./c.zig");
+const globals = @import("./globals.zig");
+const Grid = @import("./grid.zig");
 
 pub fn getTiles(renderer: *c.SDL_Renderer, allocator: *const std.mem.Allocator) !ArrayList(*c.SDL_Texture) {
     var tiles = ArrayList(*c.SDL_Texture).init(allocator.*);
@@ -83,7 +21,7 @@ pub fn main() !void {
     _ = c.SDL_Init(c.SDL_INIT_VIDEO);
     defer c.SDL_Quit();
 
-    var window = c.SDL_CreateWindow("Sample Window", c.SDL_WINDOWPOS_CENTERED, c.SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0) orelse {
+    var window = c.SDL_CreateWindow("Sample Window", c.SDL_WINDOWPOS_CENTERED, c.SDL_WINDOWPOS_CENTERED, globals.WIDTH, globals.HEIGHT, 0) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
@@ -114,7 +52,10 @@ pub fn main() !void {
         _ = c.SDL_SetRenderDrawColor(renderer, 0x2a, 0xca, 0xea, 0xff);
         _ = c.SDL_RenderClear(renderer);
 
-        try drawTiles(renderer, &tiles, &allocator);
+        var grid = try Grid.initializeGrid(&allocator);
+        defer grid.deinit(allocator);
+
+        try Grid.drawGrid(renderer, &grid, &tiles);
 
         c.SDL_RenderPresent(renderer);
         frame += 1;
