@@ -9,7 +9,11 @@ const Cell = gridObj.Cell;
 
 pub fn getTiles(renderer: *c.SDL_Renderer, allocator: *const std.mem.Allocator) !ArrayList(*c.SDL_Texture) {
     var tiles = ArrayList(*c.SDL_Texture).init(allocator.*);
-    for ([_][*c]const u8{ "assets/empty.png", "assets/up.png", "assets/down.png", "assets/left.png", "assets/right.png" }) |file| {
+    for ([_][*c]const u8{ "assets/empty.png",
+                         "assets/up.png",
+                         "assets/down.png",
+                         "assets/left.png",
+                         "assets/right.png" }) |file| {
         var tile = c.IMG_LoadTexture(renderer, file) orelse {
             c.SDL_Log("Unable to load texture: %s", c.SDL_GetError());
             return error.SDLInitializationFailed;
@@ -23,7 +27,9 @@ pub fn main() !void {
     _ = c.SDL_Init(c.SDL_INIT_VIDEO);
     defer c.SDL_Quit();
 
-    var window = c.SDL_CreateWindow("Sample Window", c.SDL_WINDOWPOS_CENTERED, c.SDL_WINDOWPOS_CENTERED, globals.WIDTH, globals.HEIGHT, 0) orelse {
+    var window = c.SDL_CreateWindow("Sample Window",
+                                    c.SDL_WINDOWPOS_CENTERED, c.SDL_WINDOWPOS_CENTERED,
+                                    globals.WIDTH, globals.HEIGHT, 0) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
@@ -35,15 +41,15 @@ pub fn main() !void {
     };
     defer c.SDL_DestroyRenderer(renderer);
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
     const tiles = try getTiles(renderer, &allocator);
-    defer tiles.deinit();
+//    defer tiles.deinit();
 
     var grid = try Grid.create(&allocator);
-    defer grid.cells.deinit(allocator);
+ //   defer grid.cells.deinit(allocator);
 
     var frame: usize = 0;
     mainloop: while (true) {
@@ -63,6 +69,6 @@ pub fn main() !void {
 
         c.SDL_RenderPresent(renderer);
         frame += 1;
-        c.SDL_Delay(1000);
+        c.SDL_Delay(700);
     }
 }

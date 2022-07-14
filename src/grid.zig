@@ -6,14 +6,10 @@ const globals = @import("./globals.zig");
 
 pub const Cell = struct {
     collapsed: bool = false,
-    options: [5]bool = [5]bool{true, true, true, true, true},
+    options: ArrayList(u32),
 
-    pub fn entropy(self: Cell) u16 {
-        var s: u16 = 0;
-        for (self.options) |option| {
-            if(option) { s += 1; }
-        }
-        return s;
+    pub fn entropy(self: Cell) usize {
+        return self.options.items.len;
     }
 
     pub fn getFirstIndex(self: Cell) usize {
@@ -37,8 +33,10 @@ pub const Grid = struct {
 
         var i: u16 = 0;
         while (i < globals.DIM * globals.DIM) : (i += 1) {
+            var option = ArrayList(u32).init(allocator.*);
+            try option.append(1);
             try cells.append(allocator.*, Cell{ .collapsed = false,
-                                              .options = [5]bool{ false, true, false, false, false } });
+                                               .options = option });
         }
 
         return Grid{.cells = cells, .allocator = allocator,
@@ -51,7 +49,7 @@ pub const Grid = struct {
 
     fn getMinEntropy(self: *Grid) !ArrayList(u32) {
         // TODO: Use iterators instead of this.
-        var minEntropy: u16 = 6;
+        var minEntropy: usize = std.math.maxInt(u32);
         var minEntropyList = ArrayList(u32).init(self.allocator.*);
 
         var i: u32 = 0;
@@ -75,11 +73,13 @@ pub const Grid = struct {
 
     pub fn collapse(self: *Grid) !void {
         var minEntropyList = try self.getMinEntropy();
-        defer minEntropyList.deinit();
         
         var index = minEntropyList.items.len + 1;
         switch(minEntropyList.items.len) {
-            0 => {return;},
+            0 => {
+                std.debug.print("Zero options for cells available.\n", .{});
+                return;
+            },
             1 => {index = minEntropyList.items[0];},
             else => {
                 index = self.prng.random().intRangeAtMost(usize, 0, minEntropyList.items.len - 1);
@@ -105,8 +105,7 @@ pub const Grid = struct {
                                      .w = globals.SIDE,
                                      .h = globals.SIDE };
                 if (cell.collapsed) {
-                    const index = cell.getFirstIndex();
-                    _ = c.SDL_RenderCopy(renderer, tiles.items[index], null, &box);
+                    _ = c.SDL_RenderCopy(renderer, tiles.items[cell.options.items[0]], null, &box);
                 } else {
                     _ = c.SDL_RenderCopy(renderer, tiles.items[@enumToInt(globals.DIR.BLANK)], null, &box);
                 }
