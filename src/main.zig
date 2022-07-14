@@ -63,7 +63,6 @@ pub fn main() !void {
         _ = c.SDL_SetRenderDrawColor(renderer, 0x2a, 0xca, 0xea, 0xff);
         _ = c.SDL_RenderClear(renderer);
 
-
         try grid.collapse();
         try grid.draw(renderer, &tiles);
 

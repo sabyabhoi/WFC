@@ -7,19 +7,10 @@ const globals = @import("./globals.zig");
 pub const Cell = struct {
     collapsed: bool = false,
     options: ArrayList(u32),
+    chosen: ?usize = null,
 
     pub fn entropy(self: Cell) usize {
         return self.options.items.len;
-    }
-
-    pub fn getFirstIndex(self: Cell) usize {
-        var i: u16 = 0;
-        while (i < 5) : (i += 1) {
-            if (self.options[i]) {
-                break;
-            }
-        }
-        return i;
     }
 };
 
@@ -33,10 +24,10 @@ pub const Grid = struct {
 
         var i: u16 = 0;
         while (i < globals.DIM * globals.DIM) : (i += 1) {
-            var option = ArrayList(u32).init(allocator.*);
-            try option.append(1);
+            var options = ArrayList(u32).init(allocator.*);
+            try options.appendSlice(&[_]u32{0, 1, 2, 3, 4});
             try cells.append(allocator.*, Cell{ .collapsed = false,
-                                               .options = option });
+                                               .options = options});
         }
 
         return Grid{.cells = cells, .allocator = allocator,
@@ -89,6 +80,10 @@ pub const Grid = struct {
 
         var cell = self.cells.get(index);
         cell.collapsed = true;
+
+        if(cell.chosen == null)
+            cell.chosen = self.prng.random().intRangeAtMost(usize, 0, cell.entropy() - 1);
+
         self.cells.set(index, cell);
     }
 
@@ -105,7 +100,9 @@ pub const Grid = struct {
                                      .w = globals.SIDE,
                                      .h = globals.SIDE };
                 if (cell.collapsed) {
-                    _ = c.SDL_RenderCopy(renderer, tiles.items[cell.options.items[0]], null, &box);
+                    _ = c.SDL_RenderCopy(renderer,
+                                         tiles.items[cell.options.items[cell.chosen orelse @enumToInt(globals.DIR.BLANK)]],
+                                         null, &box);
                 } else {
                     _ = c.SDL_RenderCopy(renderer, tiles.items[@enumToInt(globals.DIR.BLANK)], null, &box);
                 }
