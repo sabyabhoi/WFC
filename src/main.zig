@@ -3,17 +3,16 @@ const ArrayList = std.ArrayList;
 const MultiArrayList = std.MultiArrayList;
 const c = @import("./c.zig");
 const globals = @import("./globals.zig");
-const gridObj = @import("./grid.zig");
-const Grid = gridObj.Grid;
-const Cell = gridObj.Cell;
+const Grid = @import("./grid.zig").Grid;
+const Cell = @import("./cell.zig").Cell;
 
 pub fn getTiles(renderer: *c.SDL_Renderer, allocator: *const std.mem.Allocator) !ArrayList(*c.SDL_Texture) {
     var tiles = ArrayList(*c.SDL_Texture).init(allocator.*);
     for ([_][*c]const u8{
         "assets/up.png",
         "assets/right.png",
-        "assets/left.png",
         "assets/down.png",
+        "assets/left.png",
         "assets/empty.png",
     }) |file| {
         var tile = c.IMG_LoadTexture(renderer, file) orelse {

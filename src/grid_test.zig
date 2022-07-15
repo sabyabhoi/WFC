@@ -1,8 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
-//const test_allocator = std.testing.;
 
-const Cell = @import("./grid.zig").Cell;
+const Cell = @import("./cell.zig").Cell;
 const Grid = @import("./grid.zig").Grid;
 const DIR = @import("./globals.zig").DIR;
 
@@ -31,10 +30,11 @@ test "UP Cell rules" {
     const cell: Cell = Cell{.options = options, .chosen = DIR.UP};
 
     var rules = try cell.getRules(DIR.UP, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.LEFT, DIR.DOWN});
+//    logRules(&cell, DIR.UP, rules.items);
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.RIGHT, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.LEFT, DIR.DOWN});
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.LEFT, &allocator);
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.RIGHT, DIR.DOWN});
@@ -56,7 +56,7 @@ test "DOWN Cell rules" {
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.BLANK});
 
     rules = try cell.getRules(DIR.RIGHT, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.LEFT, DIR.DOWN});
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.LEFT, &allocator);
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.RIGHT, DIR.DOWN});
@@ -75,7 +75,7 @@ test "LEFT Cell rules" {
     const cell: Cell = Cell{.options = options, .chosen = DIR.LEFT};
 
     var rules = try cell.getRules(DIR.UP, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.LEFT, DIR.DOWN});
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.RIGHT, &allocator);
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.BLANK});
@@ -97,10 +97,10 @@ test "RIGHT Cell rules" {
     const cell: Cell = Cell{.options = options, .chosen = DIR.RIGHT};
 
     var rules = try cell.getRules(DIR.UP, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.LEFT, DIR.DOWN});
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.RIGHT, &allocator);
-    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.LEFT, DIR.DOWN});
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.DOWN, DIR.LEFT});
 
     rules = try cell.getRules(DIR.LEFT, &allocator);
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.LEFT, DIR.BLANK});

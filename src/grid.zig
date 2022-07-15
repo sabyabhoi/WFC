@@ -1,12 +1,16 @@
-const test_allocator = std.testing.allocator;
 const std = @import("std");
+const test_allocator = std.testing.allocator;
 const MultiArrayList = std.MultiArrayList;
 const ArrayList = std.ArrayList;
+
 const c = @import("./c.zig");
 const globals = @import("./globals.zig");
 const DIR = globals.DIR;
+const Cell = @import("./cell.zig").Cell;
 
-fn intersection(a: *const ArrayList(DIR), b: *const ArrayList(DIR), allocator: *const std.mem.Allocator) !ArrayList(DIR) {
+fn intersection(a: *const ArrayList(DIR),
+                b: *const ArrayList(DIR),
+                allocator: *const std.mem.Allocator) !ArrayList(DIR) {
     var ans = ArrayList(DIR).init(allocator.*);
     for (a.items) |ia| {
         for(b.items) |ib| {
@@ -15,37 +19,6 @@ fn intersection(a: *const ArrayList(DIR), b: *const ArrayList(DIR), allocator: *
     }
     return ans;
 }
-
-pub const Cell = struct {
-    collapsed: bool = false,
-    options: ArrayList(DIR),
-    chosen: ?DIR = null,
-
-    pub fn entropy(self: *Cell) usize {
-        return self.options.items.len;
-    }
-
-    pub fn getRules(self: *const Cell, look: DIR, allocator: *const std.mem.Allocator) !ArrayList(DIR) {
-        if(look == DIR.BLANK) unreachable;
-        var rules = ArrayList(DIR).init(allocator.*);
-        const sides = DIR.sides();
-        const otherSide = switch(look) {
-            DIR.UP => DIR.DOWN,
-            DIR.DOWN => DIR.UP,
-            DIR.LEFT => DIR.RIGHT,
-            DIR.RIGHT => DIR.LEFT,
-            DIR.BLANK => unreachable,
-        };
-
-        var j: usize = 0;
-        while(j < 5) : (j += 1) {
-            if(sides[@enumToInt(self.chosen.?)][@enumToInt(look)] == sides[j][@enumToInt(otherSide)])
-                try rules.append(@intToEnum(DIR, j));
-        }
-
-        return rules;
-    }
-};
 
 pub const Grid = struct {
     cells: MultiArrayList(Cell),
