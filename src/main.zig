@@ -53,21 +53,25 @@ pub fn main() !void {
 
     var frame: usize = 0;
     mainloop: while (true) {
+
+        _ = c.SDL_SetRenderDrawColor(renderer, 0x2a, 0xca, 0xea, 0xff);
+        _ = c.SDL_RenderClear(renderer);
+
         var sdl_event: c.SDL_Event = undefined;
         while (c.SDL_PollEvent(&sdl_event) != 0) {
             switch (sdl_event.type) {
                 c.SDL_QUIT => break :mainloop,
+                c.SDL_KEYDOWN => {
+                },
                 else => {},
             }
         }
-        _ = c.SDL_SetRenderDrawColor(renderer, 0x2a, 0xca, 0xea, 0xff);
-        _ = c.SDL_RenderClear(renderer);
 
         try grid.collapse();
         try grid.draw(renderer, &tiles);
 
         c.SDL_RenderPresent(renderer);
         frame += 1;
-        c.SDL_Delay(700);
+        c.SDL_Delay(50);
     }
 }

@@ -1,6 +1,6 @@
-pub const WIDTH: u16 = 512;
-pub const HEIGHT: u16 = 512;
-pub const DIM: u16 = 2;
+pub const WIDTH: u16 = 1024;
+pub const HEIGHT: u16 = 1024;
+pub const DIM: u16 = 16;
 pub const SIDE: u16 = WIDTH/DIM;
 
 pub const DIR = enum {

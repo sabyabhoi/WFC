@@ -6,9 +6,19 @@ const c = @import("./c.zig");
 const globals = @import("./globals.zig");
 const DIR = globals.DIR;
 
+fn intersection(a: *const ArrayList(DIR), b: *const ArrayList(DIR), allocator: *const std.mem.Allocator) !ArrayList(DIR) {
+    var ans = ArrayList(DIR).init(allocator.*);
+    for (a.items) |ia| {
+        for(b.items) |ib| {
+            if(ia == ib) try ans.append(ia);
+        }
+    }
+    return ans;
+}
+
 pub const Cell = struct {
     collapsed: bool = false,
-    options: ArrayList(u32),
+    options: ArrayList(DIR),
     chosen: ?DIR = null,
 
     pub fn entropy(self: *Cell) usize {
@@ -47,8 +57,8 @@ pub const Grid = struct {
 
         var i: u16 = 0;
         while (i < globals.DIM * globals.DIM) : (i += 1) {
-            var options = ArrayList(u32).init(allocator.*);
-            try options.appendSlice(&[_]u32{0, 1, 2, 3, 4});
+            var options = ArrayList(DIR).init(allocator.*);
+            try options.appendSlice(&[_]DIR{DIR.BLANK, DIR.UP, DIR.RIGHT, DIR.LEFT, DIR.DOWN});
             try cells.append(allocator.*, Cell{ .collapsed = false,
                                                .options = options});
         }
@@ -81,7 +91,6 @@ pub const Grid = struct {
                 try minEntropyList.append(i);
             }
         }
-        std.debug.print("{any} ", .{minEntropyList.items});
         return minEntropyList;
     }
 
@@ -102,9 +111,44 @@ pub const Grid = struct {
         if(cell.collapsed) return;
         cell.collapsed = true;
 
-        if(cell.chosen == null)
-            cell.chosen = @intToEnum(DIR, self.prng.random().intRangeAtMost(usize, 0, cell.entropy() - 1));
+        if(cell.chosen == null) {
+            var ix = self.prng.random().intRangeAtMost(usize, 0, cell.entropy() - 1);
+            cell.chosen = cell.options.items[ix];
 
+            const collapsedList = self.cells.items(.collapsed);
+            if(index % globals.DIM > 0 and !collapsedList[index - 1]) {
+                var leftCell = self.cells.get(index - 1);
+
+                const ruleSet = try cell.getRules(DIR.LEFT, self.allocator);
+                leftCell.options = try intersection(&leftCell.options, &ruleSet, self.allocator);
+
+                self.cells.set(index - 1, leftCell);
+            }
+            if(index % globals.DIM < globals.DIM - 1 and !collapsedList[index + 1]) {
+                var rightCell = self.cells.get(index + 1);
+
+                const ruleSet = try cell.getRules(DIR.RIGHT, self.allocator);
+                rightCell.options = try intersection(&rightCell.options, &ruleSet, self.allocator);
+
+                self.cells.set(index + 1, rightCell);
+            }
+            if(index >= globals.DIM and !collapsedList[index - globals.DIM]) {
+                var topCell = self.cells.get(index - globals.DIM);
+
+                const ruleSet = try cell.getRules(DIR.UP, self.allocator);
+                topCell.options = try intersection(&topCell.options, &ruleSet, self.allocator);
+
+                self.cells.set(index - globals.DIM, topCell);
+            }
+            if(index <= collapsedList.len - 1 - globals.DIM and !collapsedList[index + globals.DIM]) {
+                var bottomCell = self.cells.get(index + globals.DIM);
+
+                const ruleSet = try cell.getRules(DIR.DOWN, self.allocator);
+                bottomCell.options = try intersection(&bottomCell.options, &ruleSet, self.allocator);
+
+                self.cells.set(index + globals.DIM, bottomCell);
+            }
+        }
         self.cells.set(index, cell);
     }
 
@@ -116,17 +160,18 @@ pub const Grid = struct {
             var j: u16 = 0;
             while (j < globals.DIM) : (j += 1) {
                 var cell = self.cells.get(i + j * globals.DIM);
-                var box = c.SDL_Rect{ .x = j * globals.SIDE,
-                                     .y = i * globals.SIDE,
+                var box = c.SDL_Rect{ .x = i * globals.SIDE,
+                                     .y = j * globals.SIDE,
                                      .w = globals.SIDE,
                                      .h = globals.SIDE };
+
                 if (cell.collapsed) {
-                    _ = try cell.getRules(DIR.LEFT, self.allocator);
                     _ = c.SDL_RenderCopy(renderer,
-                                         tiles.items[cell.options.items[@enumToInt(cell.chosen orelse DIR.BLANK)]],
+                                         tiles.items[@enumToInt(cell.chosen orelse DIR.BLANK)],
                                          null, &box);
                 } else {
                     _ = c.SDL_RenderCopy(renderer, tiles.items[@enumToInt(DIR.BLANK)], null, &box);
+                    _ = c.SDL_RenderDrawRect(renderer, &box);
                 }
             }
         }

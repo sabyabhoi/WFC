@@ -26,7 +26,7 @@ test "UP Cell rules" {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    var options = std.ArrayList(u32).init(allocator);
+    var options = std.ArrayList(DIR).init(allocator);
 
     const cell: Cell = Cell{.options = options, .chosen = DIR.UP};
 
@@ -48,7 +48,7 @@ test "DOWN Cell rules" {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    var options = std.ArrayList(u32).init(allocator);
+    var options = std.ArrayList(DIR).init(allocator);
 
     const cell: Cell = Cell{.options = options, .chosen = DIR.DOWN};
 
@@ -70,7 +70,7 @@ test "LEFT Cell rules" {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    var options = std.ArrayList(u32).init(allocator);
+    var options = std.ArrayList(DIR).init(allocator);
 
     const cell: Cell = Cell{.options = options, .chosen = DIR.LEFT};
 
@@ -92,7 +92,7 @@ test "RIGHT Cell rules" {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    var options = std.ArrayList(u32).init(allocator);
+    var options = std.ArrayList(DIR).init(allocator);
 
     const cell: Cell = Cell{.options = options, .chosen = DIR.RIGHT};
 
@@ -107,4 +107,26 @@ test "RIGHT Cell rules" {
 
     rules = try cell.getRules(DIR.DOWN, &allocator);
     try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.RIGHT, DIR.LEFT});
+}
+
+test "BLANK Cell rules" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const allocator = arena.allocator();
+    var options = std.ArrayList(DIR).init(allocator);
+
+    const cell: Cell = Cell{.options = options, .chosen = DIR.BLANK};
+
+    var rules = try cell.getRules(DIR.UP, &allocator);
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.UP, DIR.BLANK});
+
+    rules = try cell.getRules(DIR.RIGHT, &allocator);
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.RIGHT, DIR.BLANK});
+
+    rules = try cell.getRules(DIR.LEFT, &allocator);
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.LEFT, DIR.BLANK});
+
+    rules = try cell.getRules(DIR.DOWN, &allocator);
+    try testing.expectEqualSlices(DIR, rules.items, &[_]DIR{DIR.DOWN, DIR.BLANK});
 }
