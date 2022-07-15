@@ -8,9 +8,8 @@
 		Tilemap Generator written in Zig
     <br />
   </p>
-
+![demo.gif](https://github.com/sabyabhoi/WFC/blob/main/demo.gif)
 </div>
-![s1](https://user-images.githubusercontent.com/18750590/179167704-86be9aac-c453-4d04-ab9f-c48e290056c5.png)
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project

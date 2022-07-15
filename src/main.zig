@@ -61,8 +61,6 @@ pub fn main() !void {
         while (c.SDL_PollEvent(&sdl_event) != 0) {
             switch (sdl_event.type) {
                 c.SDL_QUIT => break :mainloop,
-                c.SDL_KEYDOWN => {
-                },
                 else => {},
             }
         }
