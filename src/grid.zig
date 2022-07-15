@@ -1,16 +1,39 @@
+const test_allocator = std.testing.allocator;
 const std = @import("std");
 const MultiArrayList = std.MultiArrayList;
 const ArrayList = std.ArrayList;
 const c = @import("./c.zig");
 const globals = @import("./globals.zig");
+const DIR = globals.DIR;
 
 pub const Cell = struct {
     collapsed: bool = false,
     options: ArrayList(u32),
-    chosen: ?usize = null,
+    chosen: ?DIR = null,
 
-    pub fn entropy(self: Cell) usize {
+    pub fn entropy(self: *Cell) usize {
         return self.options.items.len;
+    }
+
+    pub fn getRules(self: *const Cell, look: DIR, allocator: *const std.mem.Allocator) !ArrayList(DIR) {
+        if(look == DIR.BLANK) unreachable;
+        var rules = ArrayList(DIR).init(allocator.*);
+        const sides = DIR.sides();
+        const otherSide = switch(look) {
+            DIR.UP => DIR.DOWN,
+            DIR.DOWN => DIR.UP,
+            DIR.LEFT => DIR.RIGHT,
+            DIR.RIGHT => DIR.LEFT,
+            DIR.BLANK => unreachable,
+        };
+
+        var j: usize = 0;
+        while(j < 5) : (j += 1) {
+            if(sides[@enumToInt(self.chosen.?)][@enumToInt(look)] == sides[j][@enumToInt(otherSide)])
+                try rules.append(@intToEnum(DIR, j));
+        }
+
+        return rules;
     }
 };
 
@@ -67,10 +90,7 @@ pub const Grid = struct {
         
         var index = minEntropyList.items.len + 1;
         switch(minEntropyList.items.len) {
-            0 => {
-                std.debug.print("Zero options for cells available.\n", .{});
-                return;
-            },
+            0 => {return;},
             1 => {index = minEntropyList.items[0];},
             else => {
                 index = self.prng.random().intRangeAtMost(usize, 0, minEntropyList.items.len - 1);
@@ -79,10 +99,11 @@ pub const Grid = struct {
         }
 
         var cell = self.cells.get(index);
+        if(cell.collapsed) return;
         cell.collapsed = true;
 
         if(cell.chosen == null)
-            cell.chosen = self.prng.random().intRangeAtMost(usize, 0, cell.entropy() - 1);
+            cell.chosen = @intToEnum(DIR, self.prng.random().intRangeAtMost(usize, 0, cell.entropy() - 1));
 
         self.cells.set(index, cell);
     }
@@ -100,11 +121,12 @@ pub const Grid = struct {
                                      .w = globals.SIDE,
                                      .h = globals.SIDE };
                 if (cell.collapsed) {
+                    _ = try cell.getRules(DIR.LEFT, self.allocator);
                     _ = c.SDL_RenderCopy(renderer,
-                                         tiles.items[cell.options.items[cell.chosen orelse @enumToInt(globals.DIR.BLANK)]],
+                                         tiles.items[cell.options.items[@enumToInt(cell.chosen orelse DIR.BLANK)]],
                                          null, &box);
                 } else {
-                    _ = c.SDL_RenderCopy(renderer, tiles.items[@enumToInt(globals.DIR.BLANK)], null, &box);
+                    _ = c.SDL_RenderCopy(renderer, tiles.items[@enumToInt(DIR.BLANK)], null, &box);
                 }
             }
         }

@@ -9,11 +9,13 @@ const Cell = gridObj.Cell;
 
 pub fn getTiles(renderer: *c.SDL_Renderer, allocator: *const std.mem.Allocator) !ArrayList(*c.SDL_Texture) {
     var tiles = ArrayList(*c.SDL_Texture).init(allocator.*);
-    for ([_][*c]const u8{ "assets/empty.png",
-                         "assets/up.png",
-                         "assets/down.png",
-                         "assets/left.png",
-                         "assets/right.png" }) |file| {
+    for ([_][*c]const u8{
+        "assets/up.png",
+        "assets/right.png",
+        "assets/left.png",
+        "assets/down.png",
+        "assets/empty.png",
+    }) |file| {
         var tile = c.IMG_LoadTexture(renderer, file) orelse {
             c.SDL_Log("Unable to load texture: %s", c.SDL_GetError());
             return error.SDLInitializationFailed;
@@ -46,10 +48,8 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     const tiles = try getTiles(renderer, &allocator);
-//    defer tiles.deinit();
 
     var grid = try Grid.create(&allocator);
- //   defer grid.cells.deinit(allocator);
 
     var frame: usize = 0;
     mainloop: while (true) {
